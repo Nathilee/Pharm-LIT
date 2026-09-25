@@ -1,0 +1,14 @@
+{
+  "name": "pharm-lit",
+  "private": true,
+  "description": "Pharm-LIT — online pharmacy: Expo mobile app + Node.js API",
+  "scripts": {
+    "setup": "npm --prefix backend install && npm --prefix mobile install",
+    "api": "npm --prefix backend run dev",
+    "app": "npm --prefix mobile start",
+    "build:web": "npm --prefix mobile run build:web",
+    "preview": "npm run build:web && npm --prefix backend start",
+    "test": "npm --prefix backend test",
+    "check": "npm --prefix mobile run typecheck && npm --prefix mobile run lint"
+  }
+}

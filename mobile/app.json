@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Pharm-LIT",
+    "slug": "pharm-lit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "pharmlit",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.pharmlit.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.pharmlit.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E9F6E",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "Pharm-LIT — Online Pharmacy",
+      "shortName": "Pharm-LIT",
+      "themeColor": "#0E9F6E",
+      "backgroundColor": "#F5F7FA"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pharm-LIT needs access to your photos so you can upload a prescription.",
+          "cameraPermission": "Pharm-LIT needs your camera so you can photograph your prescription.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0E9F6E",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 96
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
