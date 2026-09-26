@@ -1,0 +1,48 @@
+# Fly.io config for Pharm-LIT (uses the Dockerfile in this folder).
+#
+#   fly launch --no-deploy --copy-config --name pharm-lit
+#   fly volumes create pharmlit_data --size 3 --region jnb
+#   fly secrets set JWT_SECRET="$(openssl rand -base64 48)" \
+#                   PAYSTACK_SECRET_KEY=sk_test_xxx \
+#                   ADMIN_PASSWORD='choose-a-strong-one'
+#   fly deploy
+#   fly secrets set PUBLIC_URL=https://pharm-lit.fly.dev   # once you know the URL
+
+app = "pharm-lit"
+primary_region = "jnb" # Johannesburg — Fly's closest region to Ghana
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "4000"
+  DATA_DIR = "/data/data"
+  UPLOADS_DIR = "/data/uploads"
+  PAYSTACK_CURRENCY = "GHS"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  # Keep one machine warm so Paystack webhooks land instantly. Set to 0 to cut
+  # costs; Fly will wake the machine on the first request instead.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+    method = "get"
+    path = "/api/health"
+
+# SQLite lives on this volume, so run EXACTLY ONE machine — never `fly scale
+# count 2`, as a second machine would get its own empty copy of the database.
+[[mounts]]
+  source = "pharmlit_data"
+  destination = "/data"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

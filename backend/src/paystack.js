@@ -5,14 +5,21 @@ import { HttpError } from './auth.js';
 const API = 'https://api.paystack.co';
 
 async function call(method, path, body) {
-  const res = await fetch(API + path, {
-    method,
-    headers: {
-      Authorization: `Bearer ${config.paystack.secretKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(API + path, {
+      method,
+      headers: {
+        Authorization: `Bearer ${config.paystack.secretKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    // DNS failure, no outbound network, TLS reset, timeout…
+    console.error(`Paystack unreachable (${method} ${path}):`, err.cause?.code || err.message);
+    throw new HttpError(502, 'Could not reach Paystack. Please check your connection and try again.');
+  }
   const json = await res.json().catch(() => ({}));
   if (!res.ok || json.status === false) {
     throw new HttpError(502, json.message || 'Payment provider error');

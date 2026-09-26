@@ -83,9 +83,40 @@ How a payment works:
 3. Paystack redirects back into the app (`pharmlit://order/:id`). The app then calls `GET /api/payments/paystack/verify/:reference`.
 4. The webhook also marks the order as paid, even if the customer closes the app before being redirected.
 
+## Deploying
+
+One service runs everything: the API also serves the exported web app, so the customer site, the admin dashboard and the Paystack webhook all share one URL. Two ready-made configs are in this repo.
+
+**Render** — [`render.yaml`](render.yaml). Push the repo, then Dashboard → **New → Blueprint** → pick it. Render prompts for `PAYSTACK_SECRET_KEY`, `PUBLIC_URL`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and generates `JWT_SECRET` for you. Needs a **paid instance** (Starter, from $7/month): persistent disks are not available on the free plan, and without one the database and every uploaded prescription are wiped on each deploy.
+
+**Fly.io** — [`Dockerfile`](Dockerfile) + [`fly.toml`](fly.toml):
+
+```bash
+fly launch --no-deploy --copy-config --name pharm-lit
+fly volumes create pharmlit_data --size 3 --region jnb
+fly secrets set JWT_SECRET="$(openssl rand -base64 48)" PAYSTACK_SECRET_KEY=sk_test_xxx ADMIN_PASSWORD='strong-password'
+fly deploy
+fly secrets set PUBLIC_URL=https://pharm-lit.fly.dev
+```
+
+The same `Dockerfile` runs on Railway, Cloud Run, Coolify, Dokku or a plain VPS.
+
+**Whichever host you pick:**
+
+| Setting | Value |
+| --- | --- |
+| `DATA_DIR`, `UPLOADS_DIR` | Point both at a persistent volume — SQLite + prescription images live there |
+| `JWT_SECRET` | A long random string. The server refuses to boot in production without it |
+| `PUBLIC_URL` | The deployed HTTPS URL, used for Paystack callbacks |
+| `ADMIN_PASSWORD` | Change it before the first boot — that is when the admin account is created |
+| Paystack webhook | Set it to `<PUBLIC_URL>/api/payments/paystack/webhook` in the Paystack dashboard |
+| Scaling | Stay at **one instance**. SQLite on a volume cannot be shared between machines |
+
+Back up the volume regularly: it holds the prescriptions you are legally required to keep.
+
 ## Going to production
 
-- **API:** deploy `backend/` to any Node host (Render, Railway, Fly.io or a VPS). Keep `backend/data/` (the SQLite database) and `backend/uploads/` (prescription images) on a persistent disk and back them up. Set `NODE_ENV=production`, `JWT_SECRET`, `PUBLIC_URL` and the Paystack keys.
+- **API:** see [Deploying](#deploying) above. Set `NODE_ENV=production`, `JWT_SECRET`, `PUBLIC_URL` and the Paystack keys.
 - **App:** set `EXPO_PUBLIC_API_URL=https://api.your-domain.com`. Then build with EAS (`npx eas-cli@latest build -p android` or `-p ios`) and submit to Google Play and the App Store (`npx eas-cli@latest submit`).
 - **Regulation (Ghana):** online pharmacies need a Pharmacy Council licence and a superintendent pharmacist. Check the current rules for e-pharmacy and for controlled medicines (for example, tramadol) before launch.
 - **Ideas for next steps:** SMS/push notifications for order updates (Hubtel or Expo Notifications), delivery rider tracking, GhanaPost GPS address lookup, automatic Paystack refunds, and product photos.

@@ -1,0 +1,46 @@
+# Render Blueprint for Pharm-LIT.
+# Deploy: push this branch, then Render Dashboard → New → Blueprint → pick this repo.
+#
+# The API also serves the Expo web build, so this single service is the whole app.
+# NOTE: the persistent disk requires a PAID instance type (Starter and up). On the
+# free plan the filesystem is wiped on every deploy/restart, which would delete the
+# SQLite database and every uploaded prescription.
+services:
+  - type: web
+    name: pharm-lit
+    runtime: node
+    plan: starter
+    region: frankfurt # closest Render region to Ghana
+    buildCommand: npm --prefix backend ci --omit=dev && npm --prefix mobile ci && npm --prefix mobile run build:web
+    startCommand: npm --prefix backend start
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    # Everything that must survive a deploy lives under this mount path.
+    disk:
+      name: pharmlit-data
+      mountPath: /var/data
+      sizeGB: 5
+
+    envVars:
+      - key: NODE_VERSION
+        value: "22" # node:sqlite needs >= 22.13
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data/data # SQLite database
+      - key: UPLOADS_DIR
+        value: /var/data/uploads # prescription photos
+      - key: JWT_SECRET
+        generateValue: true # Render generates a strong secret once
+      - key: PAYSTACK_CURRENCY
+        value: GHS
+      # Secrets — Render prompts for these on first sync and never stores them in git.
+      - key: PAYSTACK_SECRET_KEY
+        sync: false # sk_test_… then sk_live_…
+      - key: PUBLIC_URL
+        sync: false # e.g. https://pharm-lit.onrender.com (set after the first deploy)
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false # change it from the default before going live
