@@ -14,24 +14,33 @@ export function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role }, config.jwtSecret, { expiresIn: '30d' });
 }
 
-function readToken(req) {
+/**
+ * Possible places the login token can arrive, in order of preference.
+ * Some hosting proxies strip or overwrite the Authorization header, so the app
+ * also sends X-Auth-Token; ?token= lets <Image> load private prescription files.
+ */
+function candidateTokens(req) {
+  const out = [];
   const header = req.headers.authorization || '';
-  if (header.startsWith('Bearer ')) return header.slice(7);
-  // Allows <Image source={{ uri: '...?token=' }}> for prescription images.
-  if (typeof req.query.token === 'string') return req.query.token;
-  return null;
+  if (header.startsWith('Bearer ')) out.push(header.slice(7));
+  const custom = req.headers['x-auth-token'];
+  if (typeof custom === 'string' && custom) out.push(custom);
+  if (typeof req.query.token === 'string' && req.query.token) out.push(req.query.token);
+  return [...new Set(out)];
 }
 
 /** Attaches req.user when a valid token is present; never rejects. */
 export function optionalAuth(req, _res, next) {
-  const token = readToken(req);
-  if (token) {
+  for (const token of candidateTokens(req)) {
     try {
       const payload = jwt.verify(token, config.jwtSecret);
       const row = db.prepare('SELECT * FROM users WHERE id = ?').get(payload.sub);
-      if (row) req.user = toUser(row);
+      if (row) {
+        req.user = toUser(row);
+        break;
+      }
     } catch {
-      /* ignore invalid token */
+      /* try the next candidate */
     }
   }
   next();

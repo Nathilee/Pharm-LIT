@@ -30,6 +30,12 @@ export const setApiToken = (t: string | null) => {
 };
 export const getApiToken = () => authToken;
 
+/** Called when the server says the saved login is no longer valid. */
+let onUnauthorized: (() => void) | null = null;
+export const setOnUnauthorized = (fn: (() => void) | null) => {
+  onUnauthorized = fn;
+};
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -50,7 +56,7 @@ export async function api<T = any>(method: Method, path: string, body?: unknown)
       headers: {
         Accept: 'application/json',
         ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        ...(authToken ? { Authorization: `Bearer ${authToken}`, 'X-Auth-Token': authToken } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -65,6 +71,7 @@ export async function api<T = any>(method: Method, path: string, body?: unknown)
     /* non-JSON */
   }
   if (!res.ok) {
+    if (res.status === 401 && authToken && onUnauthorized) onUnauthorized();
     throw new ApiError(res.status, data?.error || `Request failed (${res.status})`, data?.details);
   }
   return data as T;

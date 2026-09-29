@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { api, setApiToken } from '@/lib/api';
+import { api, setApiToken, setOnUnauthorized } from '@/lib/api';
 import type { User } from '@/lib/types';
 
 const TOKEN_KEY = 'pharmlit.token';
@@ -29,6 +29,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(TOKEN_KEY, token);
     setUser(u);
     return u;
+  }, []);
+
+  // If the server rejects our token (expired, or the account was removed), sign out
+  // so screens show the sign-in prompt instead of an error.
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      setApiToken(null);
+      AsyncStorage.removeItem(TOKEN_KEY).catch(() => {});
+      setUser(null);
+    });
+    return () => setOnUnauthorized(null);
   }, []);
 
   useEffect(() => {

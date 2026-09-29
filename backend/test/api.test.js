@@ -216,3 +216,18 @@ test('cannot order more than is in stock', async () => {
   });
   assert.equal(r.status, 409);
 });
+
+test('token still works when a proxy strips or overwrites the Authorization header', async () => {
+  const login = await api('POST', '/api/auth/login', { body: { email: 'admin@pharmlit.com', password: 'admin123' } });
+  const token = login.body.token;
+  const call = (headers) => fetch(`${base}/api/admin/stats`, { headers }).then((r) => r.status);
+
+  assert.equal(await call({ Authorization: `Bearer ${token}` }), 200);
+  // Header stripped: only the fallback header arrives
+  assert.equal(await call({ 'X-Auth-Token': token }), 200);
+  // Header overwritten by the proxy with its own credentials
+  assert.equal(await call({ Authorization: 'Bearer proxy-internal-token', 'X-Auth-Token': token }), 200);
+  assert.equal(await call({ Authorization: 'Basic cHJveHk6c2VjcmV0', 'X-Auth-Token': token }), 200);
+  // No valid token at all
+  assert.equal(await call({ Authorization: 'Bearer nope' }), 401);
+});

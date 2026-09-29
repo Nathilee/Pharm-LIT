@@ -17,6 +17,18 @@ export function createApp() {
   app.disable('x-powered-by');
 
   app.use(cors());
+
+  // Compact request log: "GET /api/admin/stats 200 4ms auth=header"
+  app.use('/api', (req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const auth = req.headers.authorization ? 'header' : req.headers['x-auth-token'] ? 'x-auth-token' : req.query.token ? 'query' : 'none';
+      const line = `${req.method} ${req.originalUrl.split('?')[0]} ${res.statusCode} ${Date.now() - start}ms auth=${auth}`;
+      if (res.statusCode >= 400) console.warn(line);
+      else if (process.env.LOG_REQUESTS !== '0') console.log(line);
+    });
+    next();
+  });
   app.use(
     express.json({
       limit: '10mb', // prescription photos are sent as base64
