@@ -12,9 +12,11 @@
     "start": "node --disable-warning=ExperimentalWarning src/server.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
     "seed": "node --disable-warning=ExperimentalWarning src/seed.js --reset",
+    "seed:supabase": "node src/supabase-seed.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
