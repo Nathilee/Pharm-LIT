@@ -39,6 +39,10 @@ Requires **Node.js 22.13 or newer**.
 ```bash
 npm run setup          # install backend + mobile dependencies
 
+# Start both backend API and mobile app concurrently:
+npm run dev
+
+# Or start individually in separate terminals:
 # Terminal 1 – API on http://localhost:4000 (creates the database and sample catalogue on first run)
 npm run api
 
